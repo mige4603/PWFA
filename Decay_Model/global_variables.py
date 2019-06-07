@@ -97,6 +97,10 @@ N_Bin = Bin * Bin
 Spc = dR / s
 Org = X_dom_1D[0] / s
 
+# Processes
+nProcs = 20
+Z_edge = np.linspace(0, Zpts, nProcs, dtype=int)
+
 sim_type = '3D_Simulation'
 
 parent_dirc = '/home/michael/Documents/PWFA/Decay_Model/'+sim_type+'/'

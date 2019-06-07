@@ -33,29 +33,7 @@ neutral_vel_x = np.zeros((var.Rpts, var.Rpts, var.Zpts))
 neutral_vel_y = np.zeros((var.Rpts, var.Rpts, var.Zpts))
 neutral_vel_z = np.zeros((var.Rpts, var.Rpts, var.Zpts))
 neutral_vel = np.stack((neutral_vel_x, neutral_vel_y, neutral_vel_z), axis=3)
-'''
-Z_mid = int(var.Zpts/2)
-Z_mid_pls = Z_mid + 1
-Z_mid_mns = Z_mid - 1
 
-y_bot = np.array([plasma_den[0::, 0::, 0:Z_mid_pls],
-                  neutral_den[0::, 0::, 0:Z_mid_pls],
-                  plasma_vel_x[0::, 0::, 0:Z_mid_pls],
-                  plasma_vel_y[0::, 0::, 0:Z_mid_pls],
-                  plasma_vel_z[0::, 0::, 0:Z_mid_pls],
-                  neutral_vel_x[0::, 0::, 0:Z_mid_pls],
-                  neutral_vel_y[0::, 0::, 0:Z_mid_pls],
-                  neutral_vel_z[0::, 0::, 0:Z_mid_pls]])
-
-y_top = np.array([plasma_den[0::, 0::, Z_mid_mns::],
-                  neutral_den[0::, 0::, Z_mid_mns::],
-                  plasma_vel_x[0::, 0::, Z_mid_mns::],
-                  plasma_vel_y[0::, 0::, Z_mid_mns::],
-                  plasma_vel_z[0::, 0::, Z_mid_mns::],
-                  neutral_vel_x[0::, 0::, Z_mid_mns::],
-                  neutral_vel_y[0::, 0::, Z_mid_mns::],
-                  neutral_vel_z[0::, 0::, Z_mid_mns::]])
-'''
 y = np.array([plasma_den,
               neutral_den,
               plasma_vel_x,
