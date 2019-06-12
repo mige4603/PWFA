@@ -5,7 +5,11 @@ Created on Sun Jan 27 11:38:40 2019
 
 @author: michael
 """
+import sys
+sys.path.append('/home/michael/Documents/PWFA/PWFA/Decay_Model/')
+
 import numpy as np
+import h5py as h5
 
 # Physical Parameters
 g_ion = 5.26783 * 10**-21
@@ -53,12 +57,10 @@ R_beg = -3 * (half_max / s)
 R_end = 3 * (half_max / s)
 Z_end = 500e-6 / s
 
-Rpts = int( round( ((R_end - R_beg) / 0.01) + 1 ) )
-Zpts = int( round(Z_end / ((R_end - R_beg) / Rpts)) )
+Rpts = 101#int( round( ((R_end - R_beg) / 0.01) + 1 ) )
+Zpts = 51#int( round(Z_end / ((R_end - R_beg) / Rpts)) )
 
-Npts = Rpts * Rpts
-Div = int(Rpts/2)
-
+'''
 X_dom_1D = np.linspace(R_beg, R_end, Rpts)
 X_dom_2D = np.repeat(X_dom_1D.reshape(Rpts, 1), Rpts, axis=1)
 X_dom_3D = np.repeat(X_dom_2D.reshape(Rpts, Rpts, 1), Zpts, axis=2)
@@ -68,11 +70,23 @@ Y_dom_3D = np.repeat(Y_dom_2D.reshape(Rpts, Rpts, 1), Zpts, axis=2)
 
 Z_dom_1D = np.linspace(0, Z_end, Zpts)
 Z_dom_3D = np.tile(Z_dom_1D, (Rpts, Rpts, 1))
+'''
+init_path = '3D_Simulation/Init_Density/plasma_density_reduced.h5'
+
+myFile = h5.File(init_path, 'r')
+X_dom_1D = myFile['X Domain'][:]
+Z_dom_1D = myFile['Z Domain'][:]
+myFile.close()
 
 dR = X_dom_1D[1] - X_dom_1D[0]
+dZ = Z_dom_1D[1] - Z_dom_1D[0]
+
 dR_inv = 1. / dR
+dZ_inv = 1. / dZ
+
 dT = 1e-7 * dR
 step_ratio = dT *dR_inv
+size_ratio = dR * dZ_inv
 
 t_end = 1e-9
 Tstps = int(t_end / (t * dT))
@@ -88,8 +102,11 @@ vis_scalar = 0.00001
 visc_vel = 1000
 visc_den = 10
 
-hv_vel = 2 * visc_vel * dR_inv
-hv_den = 2 * visc_den * dR_inv
+hv_vel_r = 2 * visc_vel * dR_inv
+hv_vel_z = 2 * visc_vel * dZ_inv
+
+hv_den_r = 2 * visc_den * dR_inv
+hv_den_z = 2 * visc_den * dZ_inv
 
 # Visualization Parameters
 Bin = 150

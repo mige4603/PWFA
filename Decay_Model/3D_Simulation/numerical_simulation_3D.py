@@ -8,21 +8,21 @@ Created on Fri Jun  7 12:58:09 2019
 
 
 import sys
-sys.path.append('/home/michael/Documents/PWFA/Decay_Model/')
+sys.path.append('/home/michael/Documents/PWFA/PWFA/Decay_Model/')
 
 import numpy as np
 import h5py as h5
-import time 
+#import time 
 
 import multiprocessing as mp
 
 import global_variables as var
 import functions_P3D as fun
 
-start_time = time.time()
-
 # Set Initial Conditions
-plasma_den, neutral_den = fun.initial_condition(var.X_dom_3D, var.Y_dom_3D, var.Z_dom_3D)
+init_path = 'Init_Density/plasma_density_reduced.h5'
+plasma_den, neutral_den  = fun.import_initial_conditions(init_path)
+#plasma_den, neutral_den = fun.initial_condition(var.X_dom_3D, var.Y_dom_3D, var.Z_dom_3D)
 
 plasma_vel_x = np.zeros((var.Rpts, var.Rpts, var.Zpts))
 plasma_vel_y = np.zeros((var.Rpts, var.Rpts, var.Zpts))
@@ -145,7 +145,3 @@ for i in range(var.Tstps):
         cnt+=1
 
 #myFile.close()
-
-end_time = time.time() - start_time
-
-print '\nParallelized Code: '+str(end_time)
