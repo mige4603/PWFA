@@ -6,7 +6,7 @@ Created on Wed Jun  5 11:41:12 2019
 @author: michael
 """
 import sys
-sys.path.append('/home/michael/Documents/PWFA/Decay_Model/')
+sys.path.append('/home/michael/Documents/PWFA/PWFA/Decay_Model/')
 
 import global_variables as var
 
@@ -15,7 +15,7 @@ import h5py as h5
 
 dirc = var.parent_dirc+'Sim_Data/'
 dirc_viz = var.parent_dirc+'Visuals/Animate/'
-name = 'test_3D_004'#var.shared_Name
+name = var.shared_Name
 
 if not os.path.isdir(dirc_viz+'Plasma/'+name+'/'):
     os.mkdir(dirc_viz+'Plasma/'+name+'/')
@@ -32,8 +32,12 @@ elif not os.path.isdir(dirc_viz+'Neutral/'+name+'/density/'):
 Rpts = var.Rpts
 Zpts = var.Zpts
 Npts = Rpts * Rpts * Zpts
+
 dr = var.s * var.dR
-orig = var.s * var.R_beg
+dz = 1e-3 * var.s * var.dZ
+
+x_org = var.s * var.X_dom_1D[0]
+z_org = 0.
 
 t_end = var.t_end
 t_steps = var.Tstps
@@ -52,17 +56,17 @@ for i in range(rng):
     file.write('# vtk DataFile Version 1.0\n'
                'B Field from Parsek\nASCII\n'
                'DATASET STRUCTURED_POINTS\n'
-               'DIMENSIONS {0} {0} {1}\n'
-               'ORIGIN {2} {2} 0\n'
-               'SPACING {3} {3} {3}\n'
-               'POINT_DATA {4}\n'
-               'VECTORS B float\n'.format(Rpts, Zpts, orig, dr, Npts))
+               'DIMENSIONS {0} {1} {1}\n'
+               'ORIGIN {2} {3} {3}\n'
+               'SPACING {4} {5} {5}\n'
+               'POINT_DATA {6}\n'
+               'VECTORS B float\n'.format(Zpts, Rpts, z_org, x_org, dz, dr, Npts))
     
-    for z in range(Zpts):
+    for x in range(Rpts):
         for y in range(Rpts):
-            for x in range(Rpts):
-                p_den = plasma_density[x,y,z]
-                file.write(str(p_den)+' '+str(0)+' '+str(0)+'\n')
+            for z in range(Zpts):
+                den = plasma_density[x,y,z]
+                file.write(str(den)+' '+str(0)+' '+str(0)+'\n')
                 
     file.close()
     
@@ -70,16 +74,16 @@ for i in range(rng):
     file.write('# vtk DataFile Version 1.0\n'
                'B Field from Parsek\nASCII\n'
                'DATASET STRUCTURED_POINTS\n'
-               'DIMENSIONS {0} {0} {1}\n'
-               'ORIGIN {2} {2} 0\n'
-               'SPACING {3} {3} {3}\n'
-               'POINT_DATA {4}\n'
-               'VECTORS B float\n'.format(Rpts, Zpts, orig, dr, Npts))
+               'DIMENSIONS {0} {1} {1}\n'
+               'ORIGIN {2} {3} {3}\n'
+               'SPACING {4} {5} {5}\n'
+               'POINT_DATA {6}\n'
+               'VECTORS B float\n'.format(Zpts, Rpts, z_org, x_org, dz, dr, Npts))
     
-    for z in range(Zpts):
+    for x in range(Rpts):
         for y in range(Rpts):
-            for x in range(Rpts):
-                n_den = neutral_density[x,y,z]
-                file.write(str(n_den)+' '+str(0)+' '+str(0)+'\n')
-    
+            for z in range(Zpts):
+                den = neutral_density[x,y,z]
+                file.write(str(den)+' '+str(0)+' '+str(0)+'\n')
+                
     file.close()

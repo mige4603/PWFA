@@ -16,7 +16,7 @@ import numpy as np
 
 dirc = var.parent_dirc+'Sim_Data/'
 dirc_viz = var.parent_dirc+'Visuals/Animate/'
-name = 'test_3D_004'#var.shared_Name
+name = var.shared_Name
 
 if not os.path.isdir(dirc_viz+'Plasma/'+name+'/'):
     os.mkdir(dirc_viz+'Plasma/'+name+'/')
@@ -33,12 +33,15 @@ elif not os.path.isdir(dirc_viz+'Neutral/'+name+'/velocity/'):
 Rpts = var.Rpts
 Zpts = var.Zpts
 Npts = Rpts * Rpts * Zpts
+
 dr = var.s * var.dR
-orig = var.s * var.R_beg
+dz = 1e-3 * var.s * var.dZ
+
+x_org = var.s * var.X_dom_1D[0]
+z_org = 0.
 
 t_end = var.t_end
 t_steps = var.Tstps
-
 myFile = h5.File(dirc+name+'.h5', 'r')
 rng = len(myFile['Plasma/Velocity'])
 
@@ -53,17 +56,17 @@ for i in range(rng):
     file.write('# vtk DataFile Version 1.0\n'
                'B Field from Parsek\nASCII\n'
                'DATASET STRUCTURED_POINTS\n'
-               'DIMENSIONS {0} {0} {1}\n'
-               'ORIGIN {2} {2} 0\n'
-               'SPACING {3} {3} {3}\n'
-               'POINT_DATA {4}\n'
-               'VECTORS B float\n'.format(Rpts, Zpts, orig, dr, Npts))
+               'DIMENSIONS {0} {1} {1}\n'
+               'ORIGIN {2} {3} {3}\n'
+               'SPACING {4} {5} {5}\n'
+               'POINT_DATA {6}\n'
+               'VECTORS B float\n'.format(Zpts, Rpts, z_org, x_org, dz, dr, Npts))
     
-    for z in range(Zpts):
+    for x in range(Rpts):
         for y in range(Rpts):
-            for x in range(Rpts):
-                p_vel = plasma_velocity[x,y,z] * 10**-3
-                file.write(str(p_vel[0])+' '+str(p_vel[1])+' '+str(p_vel[2])+'\n')
+            for z in range(Zpts):
+                vel = plasma_velocity[x,y,z] * 10**-3
+                file.write(str(vel[0])+' '+str(vel[1])+' '+str(vel[2])+'\n')
                 
     file.close()
 
@@ -71,16 +74,16 @@ for i in range(rng):
     file.write('# vtk DataFile Version 1.0\n'
                'B Field from Parsek\nASCII\n'
                'DATASET STRUCTURED_POINTS\n'
-               'DIMENSIONS {0} {0} {1}\n'
-               'ORIGIN {2} {2} 0\n'
-               'SPACING {3} {3} {3}\n'
-               'POINT_DATA {4}\n'
-               'VECTORS B float\n'.format(Rpts, Zpts, orig, dr, Npts))
+               'DIMENSIONS {0} {1} {1}\n'
+               'ORIGIN {2} {3} {3}\n'
+               'SPACING {4} {5} {5}\n'
+               'POINT_DATA {6}\n'
+               'VECTORS B float\n'.format(Zpts, Rpts, z_org, x_org, dz, dr, Npts))
     
-    for z in range(Zpts):
+    for x in range(Rpts):
         for y in range(Rpts):
-            for x in range(Rpts):
-                n_vel = neutral_velocity[x,y,z] * 10**-3
-                file.write(str(n_vel[0])+' '+str(n_vel[1])+' '+str(n_vel[2])+'\n')
+            for z in range(Zpts):
+                vel = neutral_velocity[x,y,z] * 10**-3
+                file.write(str(vel[0])+' '+str(vel[1])+' '+str(vel[2])+'\n')
        
     file.close()
