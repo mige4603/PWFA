@@ -7,7 +7,7 @@ Created on Fri Jun  7 13:21:59 2019
 """
 
 import sys
-sys.path.append('/home/michael/Documents/PWFA/PWFA/Decay_Model/')
+sys.path.append('/home/cu-pwfa/Documents/Michael/PWFA/Decay_Model/')
 
 import h5py as h5
 import numpy as np
@@ -29,8 +29,8 @@ def import_initial_conditions(fileName):
     myFile = h5.File(fileName, 'r')
     
     den = myFile['density data'][:]
-    X_dom = myFile['X Domain'][:]
-    Z_dom = myFile['Z Domain'][:]
+    X_dom = myFile['X Domain'][:] / var.s
+    Z_dom = myFile['Z Domain'][:] / var.s
     
     myFile.close()
     
@@ -91,18 +91,63 @@ def velZ_domain_shift(in_put):
 
 def den_domain_shift(in_put, Zsize):
     out_put = 0.125 * (in_put[0:-1, 0:-1, 0:-1] + in_put[0:-1, 0:-1, 1::] + in_put[0:-1, 1::, 0:-1] + in_put[1::, 0:-1, 0:-1] + in_put[0:-1, 1::, 1::] + in_put[1::, 0:-1, 1::] + in_put[1::, 1::, 0:-1] + in_put[1::, 1::, 1::])
+
+    out_put_zBnd = 2 * out_put[0::, 0::, -1] - out_put[0::, 0::, -2]
+    out_put = np.append(out_put, out_put_zBnd.reshape(var.Rpts+1, var.Rpts+1, 1), axis=2)
     
-    out_put_zBnd_diff = out_put[0::, 0::, -1] - out_put[0::, 0::, -2]
-    out_put_zBnd = out_put[0::, 0::, -1] + out_put_zBnd_diff
-    out_put = np.append(out_put, out_put_zBnd.reshape(var.Rpts-1, var.Rpts-1, 1), axis=2)
+    out_put_yBnd = 2 * out_put[0::, -1, 0::] - out_put[0::, -2, 0::]
+    out_put = np.append(out_put, out_put_yBnd.reshape(var.Rpts+1, 1, Zsize), axis=1)
     
-    out_put_yBnd_diff = out_put[0::, -1, 0::] - out_put[0::, -2, 0::]
-    out_put_yBnd = out_put[0::, -1, 0::] + out_put_yBnd_diff
-    out_put = np.append(out_put, out_put_yBnd.reshape(var.Rpts-1, 1, Zsize), axis=1)
+    out_put_xBnd = 2 * out_put[-1, 0::, 0::] - out_put[-2, 0::, 0::]
+    out_put = np.append(out_put, out_put_xBnd.reshape(1, var.Rpts+2, Zsize), axis=0)
     
-    out_put_xBnd_diff = out_put[-1, 0::, 0::] - out_put[-2, 0::, 0::]
-    out_put_xBnd = out_put[-1, 0::, 0::] + out_put_xBnd_diff
-    out_put = np.append(out_put, out_put_xBnd.reshape(1, var.Rpts, Zsize), axis=0)
+    return out_put
+
+def periodic_boundary_den(in_put, Zsize):
+    #out_put = np.insert(in_put, 0, in_put[0::, 0::, -1], axis=2)
+    #out_put = np.append(out_put, out_put[0::, 0::, 1].reshape(var.Rpts, var.Rpts, 1), axis=2)
+    
+    out_put = np.insert(in_put, 0, in_put[0::, -1, 0::], axis=1)
+    out_put = np.append(out_put, out_put[0::, 1, 0::].reshape(var.Rpts, 1, Zsize), axis=1)
+    
+    out_put = np.insert(out_put, 0, out_put[-1, 0::, 0::], axis=0)
+    out_put = np.append(out_put, out_put[1, 0::, 0::].reshape(1, var.Rpts+2, Zsize), axis=0)
+    
+    return out_put
+    
+def periodic_boundary_vel_x(in_put, Zsize):
+    #out_put = np.insert(in_put, 0, in_put[0::, 0::, -1], axis=2)
+    #out_put = np.append(out_put, out_put[0::, 0::, 1].reshape(var.Rpts, var.Rpts, 1), axis=2)
+    
+    out_put = np.insert(in_put, 0, in_put[0::, -1, 0::], axis=1)
+    out_put = np.append(out_put, out_put[0::, 1, 0::].reshape(var.Rpts, 1, Zsize), axis=1)
+    
+    out_put = np.insert(out_put, 0, -out_put[-1, 0::, 0::], axis=0)
+    out_put = np.append(out_put, -out_put[1, 0::, 0::].reshape(1, var.Rpts+2, Zsize), axis=0)
+    
+    return out_put
+
+def periodic_boundary_vel_y(in_put, Zsize):
+    #out_put = np.insert(in_put, 0, in_put[0::, 0::, -1], axis=2)
+    #out_put = np.append(out_put, out_put[0::, 0::, 1].reshape(var.Rpts, var.Rpts, 1), axis=2)
+    
+    out_put = np.insert(in_put, 0, -in_put[0::, -1, 0::], axis=1)
+    out_put = np.append(out_put, -out_put[0::, 1, 0::].reshape(var.Rpts, 1, Zsize), axis=1)
+    
+    out_put = np.insert(out_put, 0, out_put[-1, 0::, 0::], axis=0)
+    out_put = np.append(out_put, out_put[1, 0::, 0::].reshape(1, var.Rpts+2, Zsize), axis=0)
+    
+    return out_put
+    
+def periodic_boundary_vel_z(in_put, Zsize):
+    #out_put = np.insert(in_put, 0, -in_put[0::, 0::, -1], axis=2)
+    #out_put = np.append(out_put, -out_put[0::, 0::, 1].reshape(var.Rpts, var.Rpts, 1), axis=2)
+    
+    out_put = np.insert(in_put, 0, in_put[0::, -1, 0::], axis=1)
+    out_put = np.append(out_put, out_put[0::, 1, 0::].reshape(var.Rpts, 1, Zsize), axis=1)
+    
+    out_put = np.insert(out_put, 0, out_put[-1, 0::, 0::], axis=0)
+    out_put = np.append(out_put, out_put[1, 0::, 0::].reshape(1, var.Rpts+2, Zsize), axis=0)
     
     return out_put
 
@@ -135,6 +180,7 @@ def calculate_sigma_psi(rel_vel_x, rel_vel_y, rel_vel_z, neut_den):
 def calculate_density(den, vel_x, vel_y, vel_z, den_sh, Zsize):
     ### HyperViscosity ###
     hv = var.hv_den_r * ( (den[2::, 1:-1, 1:-1] - 2*den[1:-1, 1:-1, 1:-1] + den[0:-2, 1:-1, 1:-1]) + (den[1:-1, 2::, 1:-1] - 2*den[1:-1, 1:-1, 1:-1] + den[1:-1, 0:-2, 1:-1]) ) + var.hv_den_z * var.size_ratio * (den[1:-1, 1:-1, 2::] - 2*den[1:-1, 1:-1, 1:-1] + den[1:-1, 1:-1, 0:-2]) 
+    '''
     hv_zBnd = var.hv_den_r * ( (den[2::, 1:-1, 0] - 2*den[1:-1, 1:-1, 0] + den[0:-2, 1:-1, 0]) + (den[1:-1, 2::, 0] - 2*den[1:-1, 1:-1, 0] + den[1:-1, 0:-2, 0]) ) + var.hv_den_z * var.size_ratio * (den[1:-1, 1:-1, 2] - 2*den[1:-1, 1:-1, 1] + den[1:-1, 1:-1, 0])
 
     hv = np.insert(hv, 0, hv_zBnd, axis=2)
@@ -165,9 +211,10 @@ def calculate_density(den, vel_x, vel_y, vel_z, den_sh, Zsize):
     
     hv = np.insert(hv, 0, hv_xBnd, axis=0)
     hv = np.append(hv, hv_xBnd.reshape(1, var.Rpts, Zsize), axis=0) 
-    
+    '''
     ### Spatial Derivatives ###
     den_out = vel_x[1:-1, 1:-1, 1:-1] * (den[2::, 1:-1, 1:-1] - den[0:-2, 1:-1, 1:-1]) + vel_y[1:-1, 1:-1, 1:-1] * (den[1:-1, 2::, 1:-1] - den[1:-1, 0:-2, 1:-1]) + var.size_ratio * vel_z[1:-1, 1:-1, 1:-1] * (den[1:-1, 1:-1, 2::] - den[1:-1, 1:-1, 0:-2]) + den[1:-1, 1:-1, 1:-1] * (vel_x[2::, 1:-1, 1:-1] - vel_x[0:-2, 1:-1, 1:-1] + vel_y[1:-1, 2::, 1:-1] - vel_y[1:-1, 0:-2, 1:-1] + var.size_ratio * (vel_z[1:-1, 1:-1, 2::] - vel_z[1:-1, 1:-1, 0:-2]) )
+    '''
     den_zBnd = vel_x[1:-1, 1:-1, 0] * (den[2::, 1:-1, 0] - den[0:-2, 1:-1, 0]) + vel_y[1:-1, 1:-1, 0] * (den[1:-1, 2::, 0] - den[1:-1, 0:-2, 0]) + var.size_ratio * vel_z[1:-1, 1:-1, 0] * (den[1:-1, 1:-1, 1] - den[1:-1, 1:-1, 0]) + den[1:-1, 1:-1, 0] * (vel_x[2::, 1:-1, 0] - vel_x[0:-2, 1:-1, 0] + vel_y[1:-1, 2::, 0] - vel_y[1:-1, 0:-2, 0] + var.size_ratio * (vel_z[1:-1, 1:-1, 1] - vel_z[1:-1, 1:-1, 0]) )
     
     den_out = np.insert(den_out, 0, den_zBnd, axis=2)
@@ -198,13 +245,14 @@ def calculate_density(den, vel_x, vel_y, vel_z, den_sh, Zsize):
     
     den_out = np.insert(den_out, 0, den_xBnd, axis=0)
     den_out = np.append(den_out, den_xBnd.reshape(1, var.Rpts, Zsize), axis=0) 
-
-    den_out = den - 0.5 * var.step_ratio * (den_out - hv) - den_sh
+    '''
+    den_out = den[1:-1, 1:-1, 1:-1] - 0.5 * var.step_ratio * (den_out - hv) - den_sh
     return den_out
 
 def calculate_velocity_x(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize):
     ### HyperViscosity ###
     hv = var.hv_vel_r * ( (vel_x[2::, 1:-1, 1:-1] - 2*vel_x[1:-1, 1:-1, 1:-1] + vel_x[0:-2, 1:-1, 1:-1]) + (vel_x[1:-1, 2::, 1:-1] - 2*vel_x[1:-1, 1:-1, 1:-1] + vel_x[1:-1, 0:-2, 1:-1]) ) + var.hv_vel_z * var.size_ratio * (vel_x[1:-1, 1:-1, 2::] - 2*vel_x[1:-1, 1:-1, 1:-1] + vel_x[1:-1, 1:-1, 0:-2]) 
+    '''
     hv_zBnd = var.hv_vel_r * ( (vel_x[2::, 1:-1, 0] - 2*vel_x[1:-1, 1:-1, 0] + vel_x[0:-2, 1:-1, 0]) + (vel_x[1:-1, 2::, 0] - 2*vel_x[1:-1, 1:-1, 0] + vel_x[1:-1, 0:-2, 0]) ) + var.hv_vel_z * var.size_ratio * (vel_x[1:-1, 1:-1, 2] - 2*vel_x[1:-1, 1:-1, 1] + vel_x[1:-1, 1:-1, 0])
     
     hv = np.insert(hv, 0, hv_zBnd, axis=2)
@@ -235,9 +283,10 @@ def calculate_velocity_x(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize):
     
     hv = np.insert(hv, 0, hv_xBnd, axis=0)
     hv = np.append(hv, -hv_xBnd.reshape(1, var.Rpts, Zsize), axis=0) 
-    
+    '''
     ### Spatial Derivatives ###
     vel_x_out = vel_x[1:-1, 1:-1, 1:-1] * (vel_x[2::, 1:-1, 1:-1] - vel_x[0:-2, 1:-1, 1:-1]) + vel_y[1:-1, 1:-1, 1:-1] * (vel_x[1:-1, 2::, 1:-1] - vel_x[1:-1, 0:-2, 1:-1]) + var.size_ratio * vel_z[1:-1, 1:-1, 1:-1] * (vel_x[1:-1, 1:-1, 2::] - vel_x[1:-1, 1:-1, 0:-2]) + 2 * k * den_inv[1:-1, 1:-1, 1:-1] * (den[2::, 1:-1, 1:-1] - den[0:-2, 1:-1, 1:-1])
+    '''
     vel_x_zBnd = vel_x[1:-1, 1:-1, 0] * (vel_x[2::, 1:-1, 0] - vel_x[0:-2, 1:-1, 0]) + vel_y[1:-1, 1:-1, 0] * (vel_x[1:-1, 2::, 0] - vel_x[1:-1, 0:-2, 0]) + var.size_ratio * vel_z[1:-1, 1:-1, 0] * (vel_x[1:-1, 1:-1, 1] - vel_x[1:-1, 1:-1, 0]) + 2 * k * den_inv[1:-1, 1:-1, 0] * (den[2::, 1:-1, 0] - den[0:-2, 1:-1, 0])
     
     vel_x_out = np.insert(vel_x_out, 0, vel_x_zBnd, axis=2)
@@ -268,13 +317,14 @@ def calculate_velocity_x(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize):
     
     vel_x_out = np.insert(vel_x_out, 0, vel_x_xBnd, axis=0)
     vel_x_out = np.append(vel_x_out, -vel_x_xBnd.reshape(1, var.Rpts, Zsize), axis=0)
-        
-    vel_x_out = vel_x - .5 * var.step_ratio * (vel_x_out - hv) - var.dT * vel_sh
+    '''
+    vel_x_out = vel_x[1:-1, 1:-1, 1:-1] - .5 * var.step_ratio * (vel_x_out - hv) - var.dT * vel_sh
     return vel_x_out
     
 def calculate_velocity_y(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize):
     ### HyperViscosity ###
     hv = var.hv_vel_r * ( (vel_y[2::, 1:-1, 1:-1] - 2*vel_y[1:-1, 1:-1, 1:-1] + vel_y[0:-2, 1:-1, 1:-1]) + (vel_y[1:-1, 2::, 1:-1] - 2*vel_y[1:-1, 1:-1, 1:-1] + vel_y[1:-1, 0:-2, 1:-1]) ) + var.hv_vel_z * var.size_ratio * (vel_y[1:-1, 1:-1, 2::] - 2*vel_y[1:-1, 1:-1, 1:-1] + vel_y[1:-1, 1:-1, 0:-2]) 
+    '''
     hv_zBnd = var.hv_vel_r * ( (vel_y[2::, 1:-1, 0] - 2*vel_y[1:-1, 1:-1, 0] + vel_y[0:-2, 1:-1, 0]) + (vel_y[1:-1, 2::, 0] - 2*vel_y[1:-1, 1:-1, 0] + vel_y[1:-1, 0:-2, 0]) ) + var.hv_vel_z * var.size_ratio * (vel_y[1:-1, 1:-1, 2] - 2*vel_y[1:-1, 1:-1, 1] + vel_y[1:-1, 1:-1, 0])
 
     hv = np.insert(hv, 0, hv_zBnd, axis=2)
@@ -305,9 +355,10 @@ def calculate_velocity_y(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize):
     
     hv = np.insert(hv, 0, hv_xBnd, axis=0)
     hv = np.append(hv, hv_xBnd.reshape(1, var.Rpts, Zsize), axis=0) 
-    
+    '''
     ### Spatial Derivatives ###
     vel_y_out = vel_x[1:-1, 1:-1, 1:-1] * (vel_y[2::, 1:-1, 1:-1] - vel_y[0:-2, 1:-1, 1:-1]) + vel_y[1:-1, 1:-1, 1:-1] * (vel_y[1:-1, 2::, 1:-1] - vel_y[1:-1, 0:-2, 1:-1]) + var.size_ratio * vel_z[1:-1, 1:-1, 1:-1] * (vel_y[1:-1, 1:-1, 2::] - vel_y[1:-1, 1:-1, 0:-2]) + 2 * k * den_inv[1:-1, 1:-1, 1:-1] * (den[1:-1, 2::, 1:-1] - den[1:-1, 0:-2, 1:-1])
+    '''
     vel_y_zBnd = vel_x[1:-1, 1:-1, 0] * (vel_y[2::, 1:-1, 0] - vel_y[0:-2, 1:-1, 0]) + vel_y[1:-1, 1:-1, 0] * (vel_y[1:-1, 2::, 0] - vel_y[1:-1, 0:-2, 0]) + var.size_ratio * vel_z[1:-1, 1:-1, 0] * (vel_y[1:-1, 1:-1, 1] - vel_y[1:-1, 1:-1, 0]) + 2 * k * den_inv[1:-1, 1:-1, 0] * (den[1:-1, 2::, 0] - den[1:-1, 0:-2, 0])
     
     vel_y_out = np.insert(vel_y_out, 0, vel_y_zBnd, axis=2)
@@ -338,13 +389,14 @@ def calculate_velocity_y(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize):
     
     vel_y_out = np.insert(vel_y_out, 0, vel_y_xBnd, axis=0)
     vel_y_out = np.append(vel_y_out, vel_y_xBnd.reshape(1, var.Rpts, Zsize), axis=0)
-        
-    vel_y_out = vel_y - .5 * var.step_ratio * (vel_y_out - hv) - var.dT * vel_sh
+    '''
+    vel_y_out = vel_y[1:-1, 1:-1, 1:-1] - .5 * var.step_ratio * (vel_y_out - hv) - var.dT * vel_sh
     return vel_y_out
     
 def calculate_velocity_z(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize):
     ### HyperViscosity ###
     hv = var.hv_vel_r * ( (vel_z[2::, 1:-1, 1:-1] - 2*vel_z[1:-1, 1:-1, 1:-1] + vel_z[0:-2, 1:-1, 1:-1]) + (vel_z[1:-1, 2::, 1:-1] - 2*vel_z[1:-1, 1:-1, 1:-1] + vel_z[1:-1, 0:-2, 1:-1]) ) + var.hv_vel_z * var.size_ratio * (vel_z[1:-1, 1:-1, 2::] - 2*vel_z[1:-1, 1:-1, 1:-1] + vel_z[1:-1, 1:-1, 0:-2]) 
+    '''
     hv_zBnd = var.hv_vel_r * ( (vel_z[2::, 1:-1, 0] - 2*vel_z[1:-1, 1:-1, 0] + vel_z[0:-2, 1:-1, 0]) + (vel_z[1:-1, 2::, 0] - 2*vel_z[1:-1, 1:-1, 0] + vel_z[1:-1, 0:-2, 0]) ) + var.hv_vel_z * var.size_ratio * (vel_z[1:-1, 1:-1, 2] - 2*vel_z[1:-1, 1:-1, 1] + vel_z[1:-1, 1:-1, 0])
 
     hv = np.insert(hv, 0, hv_zBnd, axis=2)
@@ -375,9 +427,10 @@ def calculate_velocity_z(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize):
     
     hv = np.insert(hv, 0, hv_xBnd, axis=0)
     hv = np.append(hv, hv_xBnd.reshape(1, var.Rpts, Zsize), axis=0) 
-    
+    '''
     ### Spatial Derivatives ###
     vel_z_out = vel_x[1:-1, 1:-1, 1:-1] * (vel_z[2::, 1:-1, 1:-1] - vel_z[0:-2, 1:-1, 1:-1]) + vel_y[1:-1, 1:-1, 1:-1] * (vel_z[1:-1, 2::, 1:-1] - vel_z[1:-1, 0:-2, 1:-1]) + var.size_ratio * vel_z[1:-1, 1:-1, 1:-1] * (vel_z[1:-1, 1:-1, 2::] - vel_z[1:-1, 1:-1, 0:-2]) + var.size_ratio * 2 * k * den_inv[1:-1, 1:-1, 1:-1] * (den[1:-1, 1:-1, 2::] - den[1:-1, 1:-1, 0:-2])
+    '''
     vel_z_zBnd = vel_x[1:-1, 1:-1, 0] * (vel_z[2::, 1:-1, 0] - vel_z[0:-2, 1:-1, 0]) + vel_y[1:-1, 1:-1, 0] * (vel_z[1:-1, 2::, 0] - vel_z[1:-1, 0:-2, 0]) + var.size_ratio * vel_z[1:-1, 1:-1, 0] * (vel_z[1:-1, 1:-1, 1] - vel_z[1:-1, 1:-1, 0]) + var.size_ratio * 2 * k * den_inv[1:-1, 1:-1, 0] * (den[1:-1, 1:-1, 1] - den[1:-1, 1:-1, 0])
     
     vel_z_out = np.insert(vel_z_out, 0, vel_z_zBnd, axis=2)
@@ -408,8 +461,8 @@ def calculate_velocity_z(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize):
     
     vel_z_out = np.insert(vel_z_out, 0, vel_z_xBnd, axis=0)
     vel_z_out = np.append(vel_z_out, vel_z_xBnd.reshape(1, var.Rpts, Zsize), axis=0)
-    
-    vel_z_out = vel_z - .5 * var.step_ratio * (vel_z_out - hv) - var.dT * vel_sh
+    '''
+    vel_z_out = vel_z[1:-1, 1:-1, 1:-1] - .5 * var.step_ratio * (vel_z_out - hv) - var.dT * vel_sh
     return vel_z_out
 
 def integrable_function(queue_in, queue_out, Zsize):
@@ -437,6 +490,18 @@ def integrable_function(queue_in, queue_out, Zsize):
         neutral_vel_x = in_put[5]
         neutral_vel_y = in_put[6]
         neutral_vel_z = in_put[7]
+        
+        # Periodic Boundary Edition
+        plasma_den = periodic_boundary_den(plasma_den, Zsize)
+        neutral_den = periodic_boundary_den(neutral_den, Zsize)
+        
+        plasma_vel_x = periodic_boundary_vel_x(plasma_vel_x, Zsize)
+        plasma_vel_y = periodic_boundary_vel_y(plasma_vel_y, Zsize)
+        plasma_vel_z = periodic_boundary_vel_z(plasma_vel_z, Zsize)
+        
+        neutral_vel_x = periodic_boundary_vel_x(neutral_vel_x, Zsize)
+        neutral_vel_y = periodic_boundary_vel_y(neutral_vel_y, Zsize)
+        neutral_vel_z = periodic_boundary_vel_z(neutral_vel_z, Zsize)
         
         # Shift variables to where values are caluclated
         plasma_velSH_x = velX_domain_shift(plasma_vel_x)
@@ -477,27 +542,27 @@ def integrable_function(queue_in, queue_out, Zsize):
         den_ratio = plasma_denSH * neutral_denSH_inv
             
         # Calculate Densities
-        plasma_den_out = calculate_density(plasma_den, plasma_velSH_x, plasma_velSH_y, plasma_velSH_z, -den_shared, Zsize)
-        neutral_den_out = calculate_density(neutral_den, neutral_velSH_x, neutral_velSH_y, neutral_velSH_z, den_shared, Zsize)
+        plasma_den_out = calculate_density(plasma_den, plasma_velSH_x, plasma_velSH_y, plasma_velSH_z, -den_shared[1:-1, 1:-1, 1:-1], Zsize)
+        neutral_den_out = calculate_density(neutral_den, neutral_velSH_x, neutral_velSH_y, neutral_velSH_z, den_shared[1:-1, 1:-1, 1:-1], Zsize)
         
         # Calculate Velocities
         plasma_vel_x_shared = - rel_vel_x_with_den - vel_x_shared
-        plasma_vel_x_out = calculate_velocity_x(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_denSH, plasma_denSH_inv, plasma_vel_x_shared, var.kappa, Zsize)
+        plasma_vel_x_out = calculate_velocity_x(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_denSH, plasma_denSH_inv, plasma_vel_x_shared[1:-1, 1:-1, 1:-1], var.kappa, Zsize)
         
         plasma_vel_y_shared = - rel_vel_y_with_den - vel_y_shared
-        plasma_vel_y_out = calculate_velocity_y(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_denSH, plasma_denSH_inv, plasma_vel_y_shared, var.kappa, Zsize)
+        plasma_vel_y_out = calculate_velocity_y(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_denSH, plasma_denSH_inv, plasma_vel_y_shared[1:-1, 1:-1, 1:-1], var.kappa, Zsize)
         
         plasma_vel_z_shared = - rel_vel_z_with_den - vel_z_shared
-        plasma_vel_z_out = calculate_velocity_z(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_denSH, plasma_denSH_inv, plasma_vel_z_shared, var.kappa, Zsize)
+        plasma_vel_z_out = calculate_velocity_z(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_denSH, plasma_denSH_inv, plasma_vel_z_shared[1:-1, 1:-1, 1:-1], var.kappa, Zsize)
         
         neutral_vel_x_shared = den_ratio * (var.eta * rel_vel_x + vel_x_shared)
-        neutral_vel_x_out = calculate_velocity_x(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_denSH, neutral_denSH_inv, neutral_vel_x_shared, var.kappa_n, Zsize)
+        neutral_vel_x_out = calculate_velocity_x(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_denSH, neutral_denSH_inv, neutral_vel_x_shared[1:-1, 1:-1, 1:-1], var.kappa_n, Zsize)
         
         neutral_vel_y_shared = den_ratio * (var.eta * rel_vel_y + vel_y_shared)
-        neutral_vel_y_out = calculate_velocity_y(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_denSH, neutral_denSH_inv, neutral_vel_y_shared, var.kappa_n, Zsize)
+        neutral_vel_y_out = calculate_velocity_y(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_denSH, neutral_denSH_inv, neutral_vel_y_shared[1:-1, 1:-1, 1:-1], var.kappa_n, Zsize)
         
         neutral_vel_z_shared = den_ratio * (var.eta * rel_vel_z + vel_z_shared)
-        neutral_vel_z_out = calculate_velocity_z(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_denSH, neutral_denSH_inv, neutral_vel_z_shared, var.kappa_n, Zsize)
+        neutral_vel_z_out = calculate_velocity_z(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_denSH, neutral_denSH_inv, neutral_vel_z_shared[1:-1, 1:-1, 1:-1], var.kappa_n, Zsize)
         
         # Compile Out Put
         out_put = np.array([plasma_den_out,
@@ -526,7 +591,7 @@ def saver(in_queue):
         
         if i == (sub_divide * cnt):
             time_key = 'time_%s' % str(cnt)
-            print '\nStep: '+str(cnt)+' of '+str(sets)  
+            print( '\nStep: '+str(cnt)+' of '+str(sets) )
             
             plasma_vel = np.dstack((y[2], y[3], y[4]))
             neutral_vel = np.dstack((y[5], y[6], y[7]))

@@ -6,7 +6,7 @@ Created on Sun Jan 27 11:38:40 2019
 @author: michael
 """
 import sys
-sys.path.append('/home/michael/Documents/PWFA/PWFA/Decay_Model/')
+sys.path.append('/home/cu-pwfa/Documents/Michael/PWFA/Decay_Model/')
 
 import numpy as np
 import h5py as h5
@@ -71,11 +71,12 @@ Y_dom_3D = np.repeat(Y_dom_2D.reshape(Rpts, Rpts, 1), Zpts, axis=2)
 Z_dom_1D = np.linspace(0, Z_end, Zpts)
 Z_dom_3D = np.tile(Z_dom_1D, (Rpts, Rpts, 1))
 '''
-init_path = '3D_Simulation/Init_Density/plasma_density_reduced.h5'
+init_path = 'Init_Density/plasma_density_reduced_01.h5'
+#init_path = '3D_Simulation/Init_Density/plasma_density_reduced.h5'
 
 myFile = h5.File(init_path, 'r')
-X_dom_1D = myFile['X Domain'][:]
-Z_dom_1D = myFile['Z Domain'][:]
+X_dom_1D = myFile['X Domain'][:] / s
+Z_dom_1D = myFile['Z Domain'][:] / s
 myFile.close()
 
 dR = X_dom_1D[1] - X_dom_1D[0]
@@ -88,11 +89,12 @@ dT = 1e-7 * dR
 step_ratio = dT *dR_inv
 size_ratio = dR * dZ_inv
 
-t_end = 1e-9
+t_end = 50e-9
 Tstps = int(t_end / (t * dT))
 Tstps_range = range(Tstps)
 
-save_steps = 10
+save_steps = 50
+saves = int( Tstps / save_steps )
 
 sub_steps = 1
 sub_steps_inv = 1. / sub_steps
@@ -115,19 +117,19 @@ Spc = dR / s
 Org = X_dom_1D[0] / s
 
 # Processes
-nProcs = 20
-Z_edge = np.linspace(0, Zpts, nProcs, dtype=int)
+procs = 20
+Z_edge = np.linspace(0, Zpts-1, procs+1, dtype=int)
 
 sim_type = '3D_Simulation'
 
-parent_dirc = '/home/michael/Documents/PWFA/Decay_Model/'+sim_type+'/'
+parent_dirc = '/home/cu-pwfa/Documents/Michael/PWFA/Decay_Model/'+sim_type+'/'
 viz_dirc = parent_dirc+'Visuals/'
 viz_plasma_dirc = viz_dirc+'Visuals/Plasma_Density/'
 viz_neutral_dirc = viz_dirc+'Visuals/Neutral_Density/'
 viz_total_dirc = viz_dirc+'Visuals/Total_Density/'
 
-shared_Name = 'test_3D_005'
-desc = 'Test Parallelization'
+shared_Name = 'imported_ionization_003'
+desc = 'Imported ionization data, from Roberts simulation. New Style of Periodic Boundary Conditions'
 
 data_file = parent_dirc+'Sim_Data/'+shared_Name+'.h5'
 meta_file = parent_dirc+'Meta_Data/'+shared_Name+'.txt'

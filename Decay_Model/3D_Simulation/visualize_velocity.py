@@ -6,7 +6,7 @@ Created on Wed Jun  5 12:05:13 2019
 @author: michael
 """
 import sys
-sys.path.append('/home/michael/Documents/PWFA/Decay_Model/')
+sys.path.append('/home/cu-pwfa/Documents/Michael/PWFA/Decay_Model/')
 
 import global_variables as var
 
@@ -47,7 +47,7 @@ rng = len(myFile['Plasma/Velocity'])
 
 for i in range(rng):
     time_key = 'time_{}'.format(i)
-    print time_key + ' of ' + str(rng)
+    print( time_key + ' of ' + str(rng-1) )
         
     plasma_velocity = myFile['Plasma/Velocity/'+time_key][:]
     neutral_velocity = myFile['Neutral/Velocity/'+time_key][:]
