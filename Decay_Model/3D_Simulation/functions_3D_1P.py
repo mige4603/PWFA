@@ -1,7 +1,6 @@
-#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-Created on Fri Jun  7 13:21:59 2019
+Created on Mon Jul  1 15:08:33 2019
 
 @author: michael
 """
@@ -29,11 +28,11 @@ def initial_condition(x, y, z):
     z : array
         z value within each cell
     """
-    r2 = x**2 + y**2
+    #r2 = x**2 + y**2
     
-    n = np.exp(-.5 * var.delta * r2)
+    n = .5#np.exp(-.5 * var.delta * r2)
     
-    plasma_den = n
+    plasma_den = np.full((x.shape[0], y.shape[0], z.shape[0]), n)
     neutral_den = 1. - plasma_den
     
     return plasma_den, neutral_den
@@ -67,32 +66,6 @@ def import_initial_conditions(fileName):
         
     return plasma_density, neutral_density  
 
-def calculate_sigma_psi(rel_vel_x, rel_vel_y, rel_vel_z, neut_den):
-    """ Calculate the sigma and psi values need at each step of the 
-    integrable function.
-    
-    Parameters
-    ----------
-    rel_vel : array
-        relative fluid velocities (V_n - V_p) in each grid point
-        
-    neut_den : array
-        neutral gas density at each grid point
-    """
-    vel_in = - np.dstack((rel_vel_x, rel_vel_y, rel_vel_z))
-    vel_in_2 = np.linalg.norm(vel_in)
-    
-    vel_cx = 2.54648 * var.v_thermal_sq + (vel_in_2)
-    sigma = var.sigma_func(vel_cx, var.v, var.source)
-
-    psi_base = - (var.v_thermal_sq * neut_den) / np.sqrt( 7.06858 * var.v_thermal_sq + 2 * (vel_cx*vel_cx + vel_in_2) )
-    
-    psi_x = rel_vel_x * psi_base
-    psi_y = rel_vel_y * psi_base
-    psi_z = rel_vel_z * psi_base
-    
-    return sigma, psi_x, psi_y, psi_z
-    
 def periodic_boundary_den(in_put):    
     """ Returns spliced density domain for periodic boundary conditions.
     
@@ -103,6 +76,9 @@ def periodic_boundary_den(in_put):
     """    
     out_put = np.empty(in_put.shape)
     out_put[1:-1, 1:-1, 1:-1] = in_put[1:-1, 1:-1, 1:-1]    
+    
+    out_put[0::, 0::, 0] = in_put[0::, 0::, -2]
+    out_put[0::, 0::, -1] = in_put[0::, 0::, 1]
     
     out_put[0::, 0, 0::] = in_put[0::, -2, 0::]
     out_put[0::, -1, 0::] = in_put[0::, 1, 0::]
@@ -120,8 +96,11 @@ def periodic_boundary_vel_x(in_put):
     in_put : array
         fluid velocity in x direction
     """
-    out_put = np.zeros(in_put.shape)
+    out_put = np.empty(in_put.shape)
     out_put[1:-1, 1:-1, 1:-1] = in_put[1:-1, 1:-1, 1:-1]
+    
+    out_put[0::, 0::, 0] = in_put[0::, 0::, -2]
+    out_put[0::, 0::, -1] = in_put[0::, 0::, 1]
     
     out_put[0::, 0, 0::] = in_put[0::, -2, 0::]
     out_put[0::, -1, 0::] = in_put[0::, 1, 0::]
@@ -139,8 +118,11 @@ def periodic_boundary_vel_y(in_put):
     in_put : array
         fluid velocity in y direction
     """
-    out_put = np.zeros(in_put.shape)
+    out_put = np.empty(in_put.shape)
     out_put[1:-1, 1:-1, 1:-1] = in_put[1:-1, 1:-1, 1:-1]
+    
+    out_put[0::, 0::, 0] = in_put[0::, 0::, -2]
+    out_put[0::, 0::, -1] = in_put[0::, 0::, 1]
     
     out_put[0::, 0, 0::] = -in_put[0::, -2, 0::]
     out_put[0::, -1, 0::] = -in_put[0::, 1, 0::]
@@ -158,8 +140,11 @@ def periodic_boundary_vel_z(in_put):
     in_put : array
         fluid velocity in z direction
     """
-    out_put = np.zeros(in_put.shape)
+    out_put = np.empty(in_put.shape)
     out_put[1:-1, 1:-1, 1:-1] = in_put[1:-1, 1:-1, 1:-1]
+    
+    out_put[0::, 0::, 0] = -in_put[0::, 0::, -2]
+    out_put[0::, 0::, -1] = -in_put[0::, 0::, 1]
     
     out_put[0::, 0, 0::] = in_put[0::, -2, 0::]
     out_put[0::, -1, 0::] = in_put[0::, 1, 0::]
@@ -168,6 +153,32 @@ def periodic_boundary_vel_z(in_put):
     out_put[-1, 0::, 0::] = in_put[1, 0::, 0::]
         
     return out_put
+    
+def calculate_sigma_psi(rel_vel_x, rel_vel_y, rel_vel_z, neut_den):
+    """ Calculate the sigma and psi values need at each step of the 
+    integrable function.
+    
+    Parameters
+    ----------
+    rel_vel : array
+        relative fluid velocities (V_n - V_p) in each grid point
+        
+    neut_den : array
+        neutral gas density at each grid point
+    """
+    vel_in = - np.dstack((rel_vel_x, rel_vel_y, rel_vel_z))
+    vel_in_2 = np.linalg.norm(vel_in)
+    
+    vel_cx = 2.54648 * var.v_thermal_sq + (vel_in_2)
+    sigma = var.sigma_func(vel_cx, var.v, var.source)#np.log(var.v*vel_cx) - 14.0708
+
+    psi_base = - (var.v_thermal_sq * neut_den) / np.sqrt( 7.06858 * var.v_thermal_sq + 2 * (vel_cx*vel_cx + vel_in_2) )
+    
+    psi_x = rel_vel_x * psi_base
+    psi_y = rel_vel_y * psi_base
+    psi_z = rel_vel_z * psi_base
+    
+    return sigma, psi_x, psi_y, psi_z
 
 def calculate_density(den, vel_x, vel_y, vel_z, den_sh, Zsize, periodic):
     """ Returns time derivative of fluid density.
@@ -194,8 +205,8 @@ def calculate_density(den, vel_x, vel_y, vel_z, den_sh, Zsize, periodic):
     """
     if periodic:
         # Define Data Size
-        hv = np.zeros(den.shape)
-        den_out = np.zeros(den.shape)
+        hv = np.empty(den.shape)
+        den_out = np.empty(den.shape)
         
         # Calculate Central Differences
         hv[1:-1, 1:-1, 1:-1] = var.hv_den_r * ( (den[2::, 1:-1, 1:-1] - 2*den[1:-1, 1:-1, 1:-1] + den[0:-2, 1:-1, 1:-1]) + (den[1:-1, 2::, 1:-1] - 2*den[1:-1, 1:-1, 1:-1] + den[1:-1, 0:-2, 1:-1]) ) + var.hv_den_z * var.size_ratio * (den[1:-1, 1:-1, 2::] - 2*den[1:-1, 1:-1, 1:-1] + den[1:-1, 1:-1, 0:-2]) 
@@ -329,8 +340,8 @@ def calculate_velocity_x(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize, pe
     """
     if periodic:
         # Define Data Size
-        hv = np.zeros(vel_x.shape)
-        vel_x_out = np.zeros(vel_x.shape)
+        hv = np.empty(vel_x.shape)
+        vel_x_out = np.empty(vel_x.shape)
         
         # Calculate Central Differences
         hv[1:-1, 1:-1, 1:-1] = var.hv_vel_r * ( (vel_x[2::, 1:-1, 1:-1] - 2*vel_x[1:-1, 1:-1, 1:-1] + vel_x[0:-2, 1:-1, 1:-1]) + (vel_x[1:-1, 2::, 1:-1] - 2*vel_x[1:-1, 1:-1, 1:-1] + vel_x[1:-1, 0:-2, 1:-1]) ) + var.hv_vel_z * var.size_ratio * (vel_x[1:-1, 1:-1, 2::] - 2*vel_x[1:-1, 1:-1, 1:-1] + vel_x[1:-1, 1:-1, 0:-2]) 
@@ -463,8 +474,8 @@ def calculate_velocity_y(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize, pe
     """
     if periodic:
         # Define Data Sizes
-        hv = np.zeros(vel_y.shape)
-        vel_y_out = np.zeros(vel_y.shape)
+        hv = np.empty(vel_y.shape)
+        vel_y_out = np.empty(vel_y.shape)
     
         # Calculate Central Differences
         hv[1:-1, 1:-1, 1:-1] = var.hv_vel_r * ( (vel_y[2::, 1:-1, 1:-1] - 2*vel_y[1:-1, 1:-1, 1:-1] + vel_y[0:-2, 1:-1, 1:-1]) + (vel_y[1:-1, 2::, 1:-1] - 2*vel_y[1:-1, 1:-1, 1:-1] + vel_y[1:-1, 0:-2, 1:-1]) ) + var.hv_vel_z * var.size_ratio * (vel_y[1:-1, 1:-1, 2::] - 2*vel_y[1:-1, 1:-1, 1:-1] + vel_y[1:-1, 1:-1, 0:-2]) 
@@ -598,8 +609,8 @@ def calculate_velocity_z(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize, pe
     """
     if periodic:
         # Define Data Size
-        hv = np.zeros(vel_z.shape)
-        vel_z_out = np.zeros(vel_z.shape)
+        hv = np.empty(vel_z.shape)
+        vel_z_out = np.empty(vel_z.shape)
         
         # Calculate Central Differences
         hv[1:-1, 1:-1, 1:-1] = var.hv_vel_r * ( (vel_z[2::, 1:-1, 1:-1] - 2*vel_z[1:-1, 1:-1, 1:-1] + vel_z[0:-2, 1:-1, 1:-1]) + (vel_z[1:-1, 2::, 1:-1] - 2*vel_z[1:-1, 1:-1, 1:-1] + vel_z[1:-1, 0:-2, 1:-1]) ) + var.hv_vel_z * var.size_ratio * (vel_z[1:-1, 1:-1, 2::] - 2*vel_z[1:-1, 1:-1, 1:-1] + vel_z[1:-1, 1:-1, 0:-2]) 
@@ -701,7 +712,7 @@ def calculate_velocity_z(vel_x, vel_y, vel_z, den, den_inv, vel_sh, k, Zsize, pe
 
     return vel_z_out
 
-def integrable_function(in_put, queue_in, queue_out, Zbeg, Zend, periodic, sect):
+def integrable_function(in_put, cnt, periodic):
     """ Returns the time derivative of the plasma/neutral density equations 
     and plasma/neutral momentum equations.
     
@@ -713,163 +724,81 @@ def integrable_function(in_put, queue_in, queue_out, Zbeg, Zend, periodic, sect)
     queue_out : mp.queue
         queue in which plasma and neutral gas state is placed for current time step
     """  
-    cnt = 1
     Zsize = in_put.shape[3]
-    for i in range(1, var.Tstps+1):  
-        stich = queue_in.get()
-        
-        in_put[0::, 0::, 0::, 0] = stich[0]
-        in_put[0::, 0::, 0::, -1] = stich[1]
-
-        if sect == 'bot':            
-            in_put[4, 0::, 0::, 0] = -in_put[4, 0::, 0::, 0]
-            in_put[7, 0::, 0::, 0] = -in_put[7, 0::, 0::, 0]
-            
-        elif sect == 'top':
-            in_put[4, 0::, 0::, -1] = -in_put[4, 0::, 0::, -1]
-            in_put[7, 0::, 0::, -1] = -in_put[7, 0::, 0::, -1]
-            
-        plasma_den = in_put[0]
-        neutral_den = in_put[1]
-        
-        plasma_vel_x = in_put[2]
-        plasma_vel_y = in_put[3]
-        plasma_vel_z = in_put[4]
-        
-        neutral_vel_x = in_put[5]
-        neutral_vel_y = in_put[6]
-        neutral_vel_z = in_put[7]
-        
-        # Density threshold inversion
-        plasma_den[plasma_den < var.thresh] = var.thresh
-        neutral_den[neutral_den < var.thresh] = var.thresh     
-
-        plasma_den_inv = 1. / plasma_den
-        neutral_den_inv = 1. / neutral_den
-        
-        # Shared Variables
-        den_shared = var.dT * var.alpha * (var.eps * neutral_den - plasma_den) * plasma_den
     
-        rel_vel_x = neutral_vel_x - plasma_vel_x
-        rel_vel_y = neutral_vel_y - plasma_vel_y
-        rel_vel_z = neutral_vel_z - plasma_vel_z
-        
-        rel_vel_x_with_den = rel_vel_x * neutral_den
-        rel_vel_y_with_den = rel_vel_y * neutral_den
-        rel_vel_z_with_den = rel_vel_z * neutral_den
-        
-        sigma, psi_x, psi_y, psi_z = calculate_sigma_psi(rel_vel_x, rel_vel_y, rel_vel_z, neutral_den)
-        
-        vel_x_shared = sigma * (rel_vel_x_with_den - 2 * psi_x)
-        vel_y_shared = sigma * (rel_vel_y_with_den - 2 * psi_y)
-        vel_z_shared = sigma * (rel_vel_z_with_den - 2 * psi_z)
-        
-        den_ratio = plasma_den * neutral_den_inv
-            
-        # Calculate Densities
-        plasma_den_out = calculate_density(plasma_den, plasma_vel_x, plasma_vel_y, plasma_vel_z, -den_shared, Zsize, periodic)
-        neutral_den_out = calculate_density(neutral_den, neutral_vel_x, neutral_vel_y, neutral_vel_z, den_shared, Zsize, periodic)
-        
-        # Calculate Velocities
-        plasma_vel_x_shared = - rel_vel_x_with_den - vel_x_shared
-        plasma_vel_x_out = calculate_velocity_x(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_den, plasma_den_inv, plasma_vel_x_shared, var.kappa, Zsize, periodic)
-        
-        plasma_vel_y_shared = - rel_vel_y_with_den - vel_y_shared
-        plasma_vel_y_out = calculate_velocity_y(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_den, plasma_den_inv, plasma_vel_y_shared, var.kappa, Zsize, periodic)
-        
-        plasma_vel_z_shared = - rel_vel_z_with_den - vel_z_shared
-        plasma_vel_z_out = calculate_velocity_z(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_den, plasma_den_inv, plasma_vel_z_shared, var.kappa, Zsize, periodic)
-        
-        neutral_vel_x_shared = den_ratio * (var.eta * rel_vel_x + vel_x_shared)
-        neutral_vel_x_out = calculate_velocity_x(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_den, neutral_den_inv, neutral_vel_x_shared, var.kappa_n, Zsize, periodic)
-        
-        neutral_vel_y_shared = den_ratio * (var.eta * rel_vel_y + vel_y_shared)
-        neutral_vel_y_out = calculate_velocity_y(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_den, neutral_den_inv, neutral_vel_y_shared, var.kappa_n, Zsize, periodic)
-        
-        neutral_vel_z_shared = den_ratio * (var.eta * rel_vel_z + vel_z_shared)
-        neutral_vel_z_out = calculate_velocity_z(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_den, neutral_den_inv, neutral_vel_z_shared, var.kappa_n, Zsize, periodic)
-        
-        # Compile Out Put
-        in_put = np.array([plasma_den_out,
-                           neutral_den_out,
-                           plasma_vel_x_out,
-                           plasma_vel_y_out,
-                           plasma_vel_z_out,
-                           neutral_vel_x_out,
-                           neutral_vel_y_out,
-                           neutral_vel_z_out])
-        
-        new_stich = np.empty((2, 8, var.Rpts+2, var.Rpts+2))
-        new_stich = np.array([in_put[0::, 0::, 0::, 1],
-                              in_put[0::, 0::, 0::, -2]])
-        
-        queue_out.put(new_stich)
-        '''
-        lst = np.argwhere(np.isnan(in_put[0::, 1:-1, 1:-1, 1:-1]))     
-        if lst.any():
-            time_key = 'time_%s' % str(cnt-1)
-            
-            while True:
-                try:
-                    hf = h5.File(var.data_file, 'r')    
-                    
-                    plas_den = hf['Plasma/Density/'+time_key][:]
-                    neut_den = hf['Neutral/Density/'+time_key][:]
-                    
-                    plas_vel_x = hf['Plasma/Velocity/'+time_key][0::, 0::, 0::, 0]
-                    plas_vel_y = hf['Plasma/Velocity/'+time_key][0::, 0::, 0::, 1]
-                    plas_vel_z = hf['Plasma/Velocity/'+time_key][0::, 0::, 0::, 2]
-            
-                    neut_vel_x = hf['Neutral/Velocity/'+time_key][0::, 0::, 0::, 0]
-                    neut_vel_y = hf['Neutral/Velocity/'+time_key][0::, 0::, 0::, 1]
-                    neut_vel_z = hf['Neutral/Velocity/'+time_key][0::, 0::, 0::, 2]
-                    
-                    y_pst = np.array([plas_den,
-                                      neut_den,
-                                      plas_vel_x,
-                                      plas_vel_y,
-                                      plas_vel_z,
-                                      neut_vel_x,
-                                      neut_vel_y,
-                                      neut_vel_z])
-                                      
-                    hf.close()
-                    
-                    break
-                
-                except:
-                    continue
-            
-            for l in lst:
-                print('{0} : {1}'.format(l, 1e-3 * var.v * y_pst[l[0], l[1], l[2], l[3]]))
-            print('Step {0}: {1} of {2}'.format(cnt, i, var.Tstps))
-            break
-        '''
-        if i == var.save_steps[cnt]:
-            key = 'time_{}'.format(cnt)
+    plasma_den = in_put[0]
+    neutral_den = in_put[1]
+    
+    plasma_vel_x = in_put[2]
+    plasma_vel_y = in_put[3]
+    plasma_vel_z = in_put[4]
+    
+    neutral_vel_x = in_put[5]
+    neutral_vel_y = in_put[6]
+    neutral_vel_z = in_put[7]
+    
+    # Density threshold inversion
+    plasma_den[plasma_den < var.thresh] = var.thresh
+    neutral_den[neutral_den < var.thresh] = var.thresh
+    
+    plasma_den_inv = 1. / plasma_den
+    neutral_den_inv = 1. / neutral_den
+    
+    # Shared Variables
+    den_shared = var.dT * var.alpha * (var.eps * neutral_den - plasma_den) * plasma_den
 
-            plasma_vel_out = np.stack((plasma_vel_x_out[1:-1, 1:-1, 1:-1], plasma_vel_y_out[1:-1, 1:-1, 1:-1], plasma_vel_z_out[1:-1, 1:-1, 1:-1]), axis=3)
-            neutral_vel_out = np.stack((neutral_vel_x_out[1:-1, 1:-1, 1:-1], neutral_vel_y_out[1:-1, 1:-1, 1:-1], neutral_vel_z_out[1:-1, 1:-1, 1:-1]), axis=3)
-            
-            while True:
-                try:
-                    hf = h5.File(var.data_file, 'a')      
-                    
-                    hf['Plasma/Density/'+key][0::, 0::, Zbeg:Zend] = plasma_den_out[1:-1, 1:-1, 1:-1]
-                    hf['Neutral/Density/'+key][0::, 0::, Zbeg:Zend] = neutral_den_out[1:-1, 1:-1, 1:-1]
-                    
-                    hf['Plasma/Velocity/'+key][0::, 0::, Zbeg:Zend, 0::] = plasma_vel_out
-                    hf['Neutral/Velocity/'+key][0::, 0::, Zbeg:Zend, 0::] = neutral_vel_out
-                    
-                    hf.close()
-                    
-                    break
-                
-                except:
-                    continue
-            
-            cnt+=1
+    rel_vel_x = neutral_vel_x - plasma_vel_x
+    rel_vel_y = neutral_vel_y - plasma_vel_y
+    rel_vel_z = neutral_vel_z - plasma_vel_z
+    
+    rel_vel_x_with_den = rel_vel_x * neutral_den
+    rel_vel_y_with_den = rel_vel_y * neutral_den
+    rel_vel_z_with_den = rel_vel_z * neutral_den
+    
+    sigma, psi_x, psi_y, psi_z = calculate_sigma_psi(rel_vel_x, rel_vel_y, rel_vel_z, neutral_den)
 
+    vel_x_shared = sigma * (rel_vel_x_with_den - 2 * psi_x)
+    vel_y_shared = sigma * (rel_vel_y_with_den - 2 * psi_y)
+    vel_z_shared = sigma * (rel_vel_z_with_den - 2 * psi_z)
+    
+    #den_ratio = plasma_denSH * neutral_denSH_inv
+    den_ratio = plasma_den * neutral_den_inv
+        
+    # Calculate Densities
+    plasma_den_out = calculate_density(plasma_den, plasma_vel_x, plasma_vel_y, plasma_vel_z, -den_shared, Zsize, periodic)
+    neutral_den_out = calculate_density(neutral_den, neutral_vel_x, neutral_vel_y, neutral_vel_z, den_shared, Zsize, periodic)
+    
+    # Calculate Velocities
+    plasma_vel_x_shared = - rel_vel_x_with_den - vel_x_shared
+    plasma_vel_x_out = calculate_velocity_x(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_den, plasma_den_inv, plasma_vel_x_shared, var.kappa, Zsize, periodic)
+    
+    plasma_vel_y_shared = - rel_vel_y_with_den - vel_y_shared
+    plasma_vel_y_out = calculate_velocity_y(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_den, plasma_den_inv, plasma_vel_y_shared, var.kappa, Zsize, periodic)
+    
+    plasma_vel_z_shared = - rel_vel_z_with_den - vel_z_shared
+    plasma_vel_z_out = calculate_velocity_z(plasma_vel_x, plasma_vel_y, plasma_vel_z, plasma_den, plasma_den_inv, plasma_vel_z_shared, var.kappa, Zsize, periodic)
+    
+    neutral_vel_x_shared = den_ratio * (var.eta * rel_vel_x + vel_x_shared)
+    neutral_vel_x_out = calculate_velocity_x(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_den, neutral_den_inv, neutral_vel_x_shared, var.kappa_n, Zsize, periodic)
+    
+    neutral_vel_y_shared = den_ratio * (var.eta * rel_vel_y + vel_y_shared)
+    neutral_vel_y_out = calculate_velocity_y(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_den, neutral_den_inv, neutral_vel_y_shared, var.kappa_n, Zsize, periodic)
+    
+    neutral_vel_z_shared = den_ratio * (var.eta * rel_vel_z + vel_z_shared)
+    neutral_vel_z_out = calculate_velocity_z(neutral_vel_x, neutral_vel_y, neutral_vel_z, neutral_den, neutral_den_inv, neutral_vel_z_shared, var.kappa_n, Zsize, periodic)
+    
+    # Compile Out Put
+    out_put = np.array([plasma_den_out,
+                        neutral_den_out,
+                        plasma_vel_x_out,
+                        plasma_vel_y_out,
+                        plasma_vel_z_out,
+                        neutral_vel_x_out,
+                        neutral_vel_y_out,
+                        neutral_vel_z_out])
+                        
+    return out_put
+        
 def write_meta_file(fileName, desc):
     """ Writes .txt meta file for simulation.
     
