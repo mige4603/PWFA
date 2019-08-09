@@ -27,23 +27,29 @@ def cx_cross_section(source):
 def C_ion(T):
     return T * 11604 * 1.3807e-23
     
-def sigma_func(vel, source):
+def sigma_func(vel, v_scl, source):
     if source == 'Argon':
-        sig = np.log(v*vel) - 14.0708
+        sig = np.log(v_scl*vel) - 14.0708
     elif source == 'Helium':
-        sig = np.log(v*vel) - 15.2448
+        sig = np.log(v_scl*vel) - 15.2448
     
     return sig
 
 # Plasma source and temp (eV)
-shared_Name = 'imported_ionization_008'
+shared_Name = 'imported_ionization_031'
 desc = 'Standard Ionization'
 importName = 'plasma_density_reduced.h5'
 source = 'Argon'
+periodic = True
 temp = 1
-t_end = 10e-9
-saves = 2
+t_end = 1e-6
+saves = 250
 procs = 3
+
+thresh = 1e-8
+thresh_inv = 1. / thresh
+
+t_scale = 1e-6
 
 if source == 'Argon':
     A = .599e-7
@@ -98,10 +104,8 @@ kappa_n = ((gam_n * C_n) / mass_i) * (g_cx / g_ion)**2
 v_thermal = (1./v) * np.sqrt( (8*C_i) / (mass_i) )
 v_thermal_sq = v_thermal * v_thermal
 
-thresh = 1e-8
-
 Rpts = 101
-Zpts = 51
+Zpts = 51    
 
 init_path = '/home/michael/Documents/PWFA/Decay_Model/3D_Simulation/Init_Density/'+importName
 
@@ -120,7 +124,7 @@ dZ = Z_dom_1D[1] - Z_dom_1D[0]
 dR_inv = 1. / dR
 dZ_inv = 1. / dZ
 
-dT = 1e-6 * dR
+dT = t_scale * dR
 step_ratio = dT *dR_inv
 size_ratio = dR * dZ_inv
 
@@ -132,8 +136,14 @@ sub_steps_inv = 1. / sub_steps
 
 vis_scalar = 0.00001
 
-visc_vel = 1000
+visc_vel = 1200
 visc_den = 10
+
+hv_den_bnd = 0#.1
+hv_vel_bnd = 0#.1
+
+hv_vel_edg = 0#.5
+hv_den_edg = 0#.5
 
 hv_vel_r = 2 * visc_vel * dR_inv
 hv_vel_z = 2 * visc_vel * dZ_inv
@@ -148,8 +158,7 @@ Spc = dR / s
 Org = X_dom_1D[0] / s
 
 # Processes
-#Z_edge = np.linspace(0, Zpts+3, procs+1, dtype=int)
-Z_edge = np.linspace(0, Zpts+1, procs+1, dtype=int)
+Z_edge = np.linspace(0, Zpts+2, procs+1, dtype=int)
 
 sim_type = '3D_Simulation'
 
